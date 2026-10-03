@@ -1,18 +1,21 @@
-# 📊 Mis Gastos Mensuales - Expense Manager
+# Mis Gastos Mensuales
 
-Herramienta web intuitiva diseada para el seguimiento meticuloso de tus gastos diarios y presupuestos mensuales. Ideal para gestionar tu economa domstica rpidamente.
+Herramienta de seguimiento financiero optimizada para la gestión de presupuestos mensuales, categorización de transacciones y análisis de flujo de caja.
 
-## 🚀 Caractersticas
-- **Privacidad Total:** Funciona de forma local usando tu navegador. No hay bases de datos en la nube, t eres el nico dueo de tu informacin.
-- **Categorizacin Visual:** Organiza tus gastos por reas (alimentacin, transporte, ocio, facturas, etc.) con iconos y colores para una rpida identificacin.
-- **Control Mensual:** Visualiza fcilmente a dnde se va tu dinero mes a mes con grficos integrados.
-- **Diseo Responsivo:** Interfaz moderna y adaptable a pantallas de ordenador.
+## 🏗️ Arquitectura y Funcionamiento Interno
+- **Client-Side Rendering (CSR):** La interfaz se construye y actualiza dinámicamente en el cliente mediante Vanilla JavaScript, asegurando un acoplamiento bajo y alta cohesión en las funciones de manipulación del DOM.
+- **Gestión del Estado:** El estado global de las transacciones se mantiene en memoria y se sincroniza asíncronamente con el localStorage del navegador para garantizar la persistencia de sesión sin backend externo.
+- **Pipeline de Construcción (Build Step):** Incluye un script en Python (_build.py) que actúa como generador estático para compilar e inyectar configuraciones (diccionario de categorías, metadatos) directamente en el HTML final antes del despliegue.
 
-## 🛠️ Uso e Instalacin
-Al ser una aplicacin basada en HTML puro, CSS y JavaScript, no requiere instalacin:
-1. Clona este repositorio en tu equipo.
-2. Haz doble clic en el archivo `gastos-mensuales.html` para abrirlo.
-3. Empieza a aadir tus gastos con tranquilidad sabiendo que tus datos estn 100% seguros.
+## 📂 Estructura del Proyecto
+`plaintext
+mis-gastos/
+├── gastos-mensuales.html   # Core de la aplicación (UI y Lógica acoplada)
+├── _build.py               # Script de automatización y pre-procesamiento
+├── misgastos.ico           # Binario de iconografía
+└── README.md
+`
 
-## 🏷️ Etiquetas (SEO)
-`expense manager` `money tracker` `finanzas domesticas` `presupuesto mensual` `html css js app` `financial tracking`
+## ⚙️ Uso e Instalación
+1. Ejecutar python _build.py únicamente si se desea recompilar el HTML con nuevas categorías base.
+2. Abrir gastos-mensuales.html en un navegador web compatible.
