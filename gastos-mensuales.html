@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MisGastos</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    :root {
+      --bg:      #0f1117;
+      --surface: #1a1d27;
+      --card:    #21253a;
+      --border:  #2e334d;
+      --fg:      #e8eaf6;
+      --muted:   #7b82a8;
+      --primary: #7c6af7;
+      --pri2:    #a89af9;
+      --green:   #34d399;
+      --blue:    #60a5fa;
+      --red:     #f87171;
+      --orange:  #fb923c;
+      --yellow:  #fbbf24;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body { background: var(--bg); color: var(--fg); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.5; }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    .app { display: flex; height: 100vh; overflow: hidden; }
+
+    /* SIDEBAR */
+    .sidebar { width: 230px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 24px 12px; gap: 4px; }
+    .logo { padding: 0 12px 20px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+    .logo-title { font-size: 18px; font-weight: 700; color: var(--pri2); letter-spacing: -.3px; }
+    .logo-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--muted); transition: all .15s; border: none; background: none; width: 100%; text-align: left; }
+    .nav-item:hover { background: var(--card); color: var(--fg); }
+    .nav-item.active { background: var(--primary); color: #fff; }
+    .nav-item .icon { font-size: 15px; width: 20px; text-align: center; }
+
+    /* Month nav */
+    .month-nav { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border); }
+    .month-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; padding: 0 4px; }
+    .month-picker { display: flex; align-items: center; gap: 6px; }
+    .month-arrow { background: var(--card); border: 1px solid var(--border); color: var(--fg); width: 30px; height: 30px; border-radius: 8px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .15s; }
+    .month-arrow:hover { background: var(--primary); border-color: var(--primary); }
+    .month-current { flex: 1; text-align: center; font-size: 13px; font-weight: 600; color: var(--fg); background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 6px 4px; }
+    .sidebar-add { margin-top: 12px; padding: 10px; border-radius: 10px; background: var(--primary); color: #fff; font-weight: 600; font-size: 13px; cursor: pointer; border: none; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; transition: opacity .15s; }
+    .sidebar-add:hover { opacity: .88; }
+
+    /* MAIN */
+    .main { flex: 1; overflow-y: auto; padding: 32px 36px; }
+    .tab { display: none; }
+    .tab.active { display: block; }
+    .page-header { margin-bottom: 28px; }
+    .page-title { font-size: 24px; font-weight: 700; letter-spacing: -.4px; }
+    .page-sub { color: var(--muted); font-size: 13px; margin-top: 4px; }
+
+    /* Stats */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 16px; margin-bottom: 28px; }
+    .stat-card { border-radius: 16px; padding: 20px 22px; border: 1px solid var(--border); }
+    .stat-card.g-purple { background: linear-gradient(135deg,#4f3fba,#7c6af7); border-color: transparent; }
+    .stat-card.g-blue   { background: linear-gradient(135deg,#1d4ed8,#3b82f6); border-color: transparent; }
+    .stat-card.g-green  { background: linear-gradient(135deg,#065f46,#10b981); border-color: transparent; }
+    .stat-card.g-orange { background: linear-gradient(135deg,#9a3412,#f97316); border-color: transparent; }
+    .stat-card.plain    { background: var(--surface); }
+    .stat-label { font-size: 11px; font-weight: 600; opacity: .75; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+    .stat-value { font-size: 26px; font-weight: 800; letter-spacing: -.5px; }
+    .stat-sub { font-size: 12px; opacity: .65; margin-top: 4px; }
+
+    /* Charts */
+    .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+    .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
+    .chart-title { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 18px; }
+    .section-title { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 16px; }
+
+    /* Table */
+    .table-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+    .table-header { display: grid; padding: 12px 20px; background: var(--card); border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; grid-template-columns: 95px 1fr 130px 100px 90px 36px; gap: 12px; align-items: center; }
+    .expense-row { display: grid; padding: 14px 20px; border-bottom: 1px solid var(--border); align-items: center; cursor: pointer; transition: background .12s; grid-template-columns: 95px 1fr 130px 100px 90px 36px; gap: 12px; }
+    .expense-row:last-child { border-bottom: none; }
+    .expense-row:hover { background: var(--card); }
+    .del-btn { opacity: 0; transition: opacity .15s; background: none; border: none; cursor: pointer; font-size: 14px; padding: 4px; border-radius: 6px; color: var(--red); }
+    .expense-row:hover .del-btn { opacity: 1; }
+
+    /* Badges */
+    .pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+    .pay-tarjeta { background: #1d4ed820; color: var(--blue);   border: 1px solid #1d4ed840; }
+    .pay-efectivo { background: #06553a20; color: var(--green); border: 1px solid #06553a40; }
+    .cat-rest  { background: #f9731620; color: var(--orange); border: 1px solid #f9731640; }
+    .cat-super { background: #34d39920; color: var(--green);  border: 1px solid #34d39940; }
+
+    /* Filters */
+    .filters-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; }
+    .fi { background: var(--card); border: 1px solid var(--border); border-radius: 8px; color: var(--fg); padding: 7px 12px; font-size: 13px; outline: none; transition: border-color .15s; }
+    .fi:focus { border-color: var(--primary); }
+    .fi::placeholder { color: var(--muted); }
+    select.fi option { background: var(--card); }
+
+    /* Progress */
+    .prog-wrap { height: 7px; border-radius: 99px; background: var(--card); overflow: hidden; }
+    .prog-fill { height: 100%; border-radius: 99px; transition: width .5s ease; }
+
+    /* Empty */
+    .empty { text-align: center; padding: 56px 20px; color: var(--muted); }
+    .empty-icon { font-size: 38px; margin-bottom: 12px; }
+    .empty-text { font-size: 15px; font-weight: 600; color: var(--fg); margin-bottom: 6px; }
+    .empty-sub  { font-size: 13px; }
+
+    /* Modal */
+    .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.75); backdrop-filter: blur(6px); z-index: 100; display: flex; align-items: center; justify-content: center; }
+    .modal-box { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 32px; width: 460px; max-width: 96vw; max-height: 92vh; overflow-y: auto; }
+    .modal-title { font-size: 18px; font-weight: 700; }
+    .field-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+    .field-input { background: var(--card); border: 1px solid var(--border); border-radius: 10px; color: var(--fg); padding: 10px 14px; font-size: 14px; width: 100%; outline: none; transition: border-color .15s; }
+    .field-input:focus { border-color: var(--primary); }
+    .field-input::placeholder { color: var(--muted); }
+    select.field-input option { background: var(--card); }
+    textarea.field-input { resize: vertical; }
+
+    /* Type selector */
+    .type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .type-btn { padding: 14px 10px; border-radius: 12px; font-size: 13px; font-weight: 600; border: 1px solid var(--border); cursor: pointer; transition: all .15s; background: var(--card); color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .type-btn:hover { border-color: var(--primary); color: var(--fg); }
+    .type-btn.sel { border-color: var(--primary); background: var(--primary); color: #fff; }
+    .type-btn .big { font-size: 26px; }
+
+    /* Pay selector */
+    .pay-grid { display: flex; gap: 10px; }
+    .pay-btn { flex: 1; padding: 10px; border-radius: 10px; font-size: 13px; font-weight: 600; border: 1px solid var(--border); cursor: pointer; transition: all .15s; background: var(--card); color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .pay-btn.sel { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+    /* Supermarket chips */
+    .super-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .super-chip { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: var(--card); color: var(--muted); transition: all .15s; }
+    .super-chip:hover { border-color: var(--green); color: var(--green); }
+
+    /* Buttons */
+    .btn-primary   { background: var(--primary); color: #fff; border: none; border-radius: 10px; padding: 11px 20px; font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity .15s; width: 100%; }
+    .btn-primary:hover { opacity: .88; }
+    .btn-secondary { background: var(--card); color: var(--fg); border: 1px solid var(--border); border-radius: 10px; padding: 11px 20px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background .15s; width: 100%; }
+    .btn-secondary:hover { background: var(--border); }
+
+    /* Budget */
+    .budget-row { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .budget-row:last-child { border-bottom: none; }
+
+    /* Toast */
+    .toast { position: fixed; bottom: 28px; right: 28px; background: var(--primary); color: #fff; padding: 12px 20px; border-radius: 12px; font-size: 13px; font-weight: 600; z-index: 200; opacity: 0; transform: translateY(12px); transition: all .25s; pointer-events: none; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* Donut */
+    .donut-wrap { display: flex; align-items: center; gap: 24px; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+    /* Supermarket ranking card */
+    .super-rank-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+
+    @media (max-width: 900px) {
+      .charts-row { grid-template-columns: 1fr; }
+      .main { padding: 24px 16px; }
+    }
+    @media (max-width: 640px) {
+      .sidebar { display: none; }
+      .main { padding: 16px; }
+      .table-header { display: none; }
+      .expense-row { grid-template-columns: 1fr auto; }
+      .expense-row > *:not(:first-child):not(:nth-child(4)):not(:nth-child(6)) { display: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-title">🍽️ MisGastos</div>
+      <div class="logo-sub">Comida · Restaurantes · Supers</div>
+    </div>
+    <button class="nav-item active" onclick="goTab('dashboard')" data-tab="dashboard"><span class="icon">◼</span> Dashboard</button>
+    <button class="nav-item" onclick="goTab('gastos')"     data-tab="gastos">    <span class="icon">▤</span> Mis Gastos</button>
+    <button class="nav-item" onclick="goTab('super')"      data-tab="super">      <span class="icon">🛒</span> Supermercados</button>
+    <button class="nav-item" onclick="goTab('stats')"      data-tab="stats">      <span class="icon">◎</span> Estadísticas</button>
+    <button class="nav-item" onclick="goTab('presupuesto')" data-tab="presupuesto"><span class="icon">◉</span> Presupuesto</button>
+
+    <div class="month-nav">
+      <div class="month-label">Mes</div>
+      <div class="month-picker">
+        <button class="month-arrow" onclick="changeMonth(-1)">‹</button>
+        <div class="month-current" id="monthDisplay">—</div>
+        <button class="month-arrow" onclick="changeMonth(1)">›</button>
+      </div>
+    </div>
+    <button class="sidebar-add" onclick="openModal()">+ Nuevo Gasto</button>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- ===== DASHBOARD ===== -->
+    <div id="tab-dashboard" class="tab active">
+      <div class="page-header">
+        <div class="page-title">Dashboard</div>
+        <div class="page-sub" id="dashSub">Resumen mensual</div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card g-purple">
+          <div class="stat-label">Total gastado</div>
+          <div class="stat-value" id="sTotal">0,00€</div>
+          <div class="stat-sub" id="sMonthLbl">este mes</div>
+        </div>
+        <div class="stat-card g-orange">
+          <div class="stat-label">🍽️ Restaurantes</div>
+          <div class="stat-value" id="sRest">0,00€</div>
+          <div class="stat-sub" id="sRestPct">—</div>
+        </div>
+        <div class="stat-card g-green">
+          <div class="stat-label">🛒 Supermercados</div>
+          <div class="stat-value" id="sSuper">0,00€</div>
+          <div class="stat-sub" id="sSuperPct">—</div>
+        </div>
+        <div class="stat-card plain">
+          <div class="stat-label" style="color:var(--muted)">Transacciones</div>
+          <div class="stat-value" id="sCount" style="color:var(--fg)">0</div>
+          <div class="stat-sub" style="color:var(--muted)" id="sAvg">sin gastos</div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="charts-row" id="chartsRow">
+        <div class="chart-card">
+          <div class="chart-title">Restaurantes vs Supermercados</div>
+          <div class="donut-wrap">
+            <canvas id="cDonut" style="width:160px;height:160px;flex-shrink:0"></canvas>
+            <div id="donutLegend"></div>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">💳 Tarjeta vs 💵 Efectivo</div>
+          <div class="donut-wrap">
+            <canvas id="cDonut2" style="width:160px;height:160px;flex-shrink:0"></canvas>
+            <div id="donutLegend2"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-card" style="margin-bottom:24px">
+        <div class="chart-title">Evolución 6 meses</div>
+        <canvas id="cLine" style="width:100%;height:110px"></canvas>
+      </div>
+
+      <!-- Recent -->
+      <div class="table-card">
+        <div style="padding:16px 20px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+          <span class="section-title" style="margin:0">Últimas transacciones</span>
+          <button onclick="goTab('gastos')" style="background:none;border:none;color:var(--pri2);font-size:12px;font-weight:600;cursor:pointer">Ver todas →</button>
+        </div>
+        <div id="recentRows"></div>
+      </div>
+    </div>
+
+    <!-- ===== MIS GASTOS ===== -->
+    <div id="tab-gastos" class="tab">
+      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div><div class="page-title">Mis Gastos</div><div class="page-sub">Historial completo</div></div>
+        <button class="btn-primary" style="width:auto;padding:10px 18px" onclick="openModal()">+ Nuevo</button>
+      </div>
+
+      <div class="filters-bar">
+        <input class="fi" id="fSearch" placeholder="🔍 Buscar..." oninput="renderGastos()" style="min-width:180px" />
+        <select class="fi" id="fType" onchange="renderGastos()">
+          <option value="">Todo tipo</option>
+          <option value="restaurante">🍽️ Restaurante</option>
+          <option value="supermercado">🛒 Supermercado</option>
+        </select>
+        <select class="fi" id="fPay" onchange="renderGastos()">
+          <option value="">Tipo de pago</option>
+          <option value="tarjeta">💳 Tarjeta</option>
+          <option value="efectivo">💵 Efectivo</option>
+        </select>
+        <select class="fi" id="fOrder" onchange="renderGastos()">
+          <option value="fecha-desc">Más recientes</option>
+          <option value="fecha-asc">Más antiguos</option>
+          <option value="importe-desc">Mayor importe</option>
+          <option value="importe-asc">Menor importe</option>
+        </select>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <div>Fecha</div><div>Descripción / Lugar</div><div>Tipo</div><div>Pago</div><div style="text-align:right">Importe</div><div></div>
+        </div>
+        <div id="gastoRows"></div>
+      </div>
+      <div style="margin-top:10px;font-size:12px;color:var(--muted);text-align:right" id="gastoCount"></div>
+    </div>
+
+    <!-- ===== SUPERMERCADOS ===== -->
+    <div id="tab-super" class="tab">
+      <div class="page-header">
+        <div class="page-title">🛒 Supermercados</div>
+        <div class="page-sub">¿Dónde gastas más en la compra?</div>
+      </div>
+
+      <!-- Ranking -->
+      <div class="chart-card" style="margin-bottom:20px">
+        <div class="section-title">Ranking este mes</div>
+        <div id="superRanking"></div>
+      </div>
+
+      <!-- Bar chart supers -->
+      <div class="chart-card" style="margin-bottom:20px">
+        <div class="chart-title">Gasto por supermercado (este mes)</div>
+        <canvas id="cSuperBar" style="width:100%;height:180px"></canvas>
+        <div id="cSuperEmpty" class="empty" style="padding:28px;display:none"><div class="empty-sub">Sin compras en supermercado este mes</div></div>
+      </div>
+
+      <!-- Histórico por super -->
+      <div class="chart-card">
+        <div class="section-title">Histórico (6 meses) por supermercado</div>
+        <canvas id="cSuperLine" style="width:100%;height:130px"></canvas>
+        <div id="superLineLegend" style="display:flex;flex-wrap:wrap;gap:12px;margin-top:12px"></div>
+      </div>
+    </div>
+
+    <!-- ===== ESTADÍSTICAS ===== -->
+    <div id="tab-stats" class="tab">
+      <div class="page-header">
+        <div class="page-title">Estadísticas</div>
+        <div class="page-sub">Análisis de tus gastos</div>
+      </div>
+
+      <div class="chart-card" style="margin-bottom:20px">
+        <div class="section-title">Comparación mensual (6 meses)</div>
+        <canvas id="cCompare" style="width:100%;height:140px"></canvas>
+      </div>
+
+      <div class="charts-row" style="margin-bottom:20px">
+        <div class="chart-card">
+          <div class="section-title">🍽️ Restaurantes por mes</div>
+          <canvas id="cRestLine" style="width:100%;height:120px"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="section-title">🛒 Supermercados por mes</div>
+          <canvas id="cSuperLine2" style="width:100%;height:120px"></canvas>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px">
+        <div class="stat-card plain"><div class="stat-label" style="color:var(--muted)">Día pico</div><div id="xPeak" class="stat-value" style="font-size:16px;color:var(--fg)">—</div></div>
+        <div class="stat-card plain"><div class="stat-label" style="color:var(--muted)">Gasto máximo</div><div id="xMax" class="stat-value" style="font-size:16px;color:var(--red)">—</div></div>
+        <div class="stat-card plain"><div class="stat-label" style="color:var(--muted)">Gasto mínimo</div><div id="xMin" class="stat-value" style="font-size:16px;color:var(--green)">—</div></div>
+        <div class="stat-card plain"><div class="stat-label" style="color:var(--muted)">Media diaria</div><div id="xAvg" class="stat-value" style="font-size:16px;color:var(--pri2)">—</div></div>
+        <div class="stat-card plain"><div class="stat-label" style="color:var(--muted)">Visitas restaurante</div><div id="xRestCount" class="stat-value" style="font-size:16px;color:var(--orange)">—</div></div>
+        <div class="stat-card plain"><div class="stat-label" style="color:var(--muted)">Visitas supermercado</div><div id="xSuperCount" class="stat-value" style="font-size:16px;color:var(--green)">—</div></div>
+      </div>
+    </div>
+
+    <!-- ===== PRESUPUESTO ===== -->
+    <div id="tab-presupuesto" class="tab">
+      <div class="page-header">
+        <div class="page-title">Presupuesto</div>
+        <div class="page-sub">Define límites mensuales</div>
+      </div>
+
+      <div class="chart-card" style="margin-bottom:20px">
+        <div class="section-title">Límites mensuales</div>
+        <div class="budget-row">
+          <div style="flex:1;font-size:13px">🍽️ Restaurantes (total)</div>
+          <input class="field-input" id="b_restaurante" type="number" min="0" step="0.01" placeholder="Sin límite" style="width:140px" />
+        </div>
+        <div class="budget-row">
+          <div style="flex:1;font-size:13px">🛒 Supermercados (total)</div>
+          <input class="field-input" id="b_supermercado" type="number" min="0" step="0.01" placeholder="Sin límite" style="width:140px" />
+        </div>
+        <div class="budget-row" id="superBudgetInputs"></div>
+        <button class="btn-primary" style="margin-top:18px" onclick="saveBudget()">💾 Guardar</button>
+      </div>
+
+      <div class="chart-card">
+        <div class="section-title">Control este mes</div>
+        <div id="budgetBars"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- MODAL -->
+<div id="modalBg" class="modal-bg" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px">
+      <div class="modal-title" id="modalTitle">Nuevo Gasto</div>
+      <button onclick="closeModal()" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1">×</button>
+    </div>
+    <form onsubmit="saveExpense(event)">
+
+      <!-- Tipo de gasto -->
+      <div style="margin-bottom:18px">
+        <div class="field-label">Tipo de gasto *</div>
+        <div class="type-grid" style="margin-top:8px">
+          <button type="button" id="typRest"  class="type-btn" onclick="setType('restaurante')">
+            <span class="big">🍽️</span>Restaurante
+          </button>
+          <button type="button" id="typSuper" class="type-btn" onclick="setType('supermercado')">
+            <span class="big">🛒</span>Supermercado
+          </button>
+        </div>
+        <input type="hidden" id="mTipoGasto" />
+      </div>
+
+      <!-- Importe + moneda -->
+      <div style="display:flex;gap:12px;margin-bottom:16px">
+        <div style="flex:1">
+          <div class="field-label">Importe *</div>
+          <input id="mImporte" class="field-input" type="number" step="0.01" min="0.01" placeholder="0,00" required />
+        </div>
+        <div style="width:110px">
+          <div class="field-label">Moneda</div>
+          <select id="mMoneda" class="field-input">
+            <option value="€">€ Euro</option>
+            <option value="$">$ Dólar</option>
+            <option value="£">£ Libra</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Pago -->
+      <div style="margin-bottom:16px">
+        <div class="field-label">Forma de pago *</div>
+        <div class="pay-grid" style="margin-top:6px">
+          <button type="button" id="payT" class="pay-btn" onclick="setPay('tarjeta')">💳 Tarjeta</button>
+          <button type="button" id="payE" class="pay-btn" onclick="setPay('efectivo')">💵 Efectivo</button>
+        </div>
+        <input type="hidden" id="mPago" />
+      </div>
+
+      <!-- Lugar -->
+      <div style="margin-bottom:16px" id="lugarWrap">
+        <div class="field-label" id="lugarLabel">Lugar *</div>
+        <input id="mLugar" class="field-input" type="text" placeholder="Ej: Mercadona, Restaurante El Rincón..." maxlength="60" />
+        <!-- Supermarket chips (shown only for supermercado) -->
+        <div class="super-chips" id="superChips" style="display:none">
+          <button type="button" class="super-chip" onclick="setLugar('Mercadona')">Mercadona</button>
+          <button type="button" class="super-chip" onclick="setLugar('Carrefour')">Carrefour</button>
+          <button type="button" class="super-chip" onclick="setLugar('Lidl')">Lidl</button>
+          <button type="button" class="super-chip" onclick="setLugar('Aldi')">Aldi</button>
+          <button type="button" class="super-chip" onclick="setLugar('Dia')">Dia</button>
+          <button type="button" class="super-chip" onclick="setLugar('Eroski')">Eroski</button>
+          <button type="button" class="super-chip" onclick="setLugar('Alcampo')">Alcampo</button>
+          <button type="button" class="super-chip" onclick="setLugar('El Corte Inglés')">El Corte Inglés</button>
+          <button type="button" class="super-chip" onclick="setLugar('Ahorramas')">Ahorramas</button>
+          <button type="button" class="super-chip" onclick="setLugar('Consum')">Consum</button>
+          <button type="button" class="super-chip" onclick="setLugar('BM')">BM</button>
+          <button type="button" class="super-chip" onclick="setLugar('Amazon Fresh')">Amazon Fresh</button>
+        </div>
+      </div>
+
+      <!-- Descripción -->
+      <div style="margin-bottom:16px">
+        <div class="field-label">Descripción <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></div>
+        <input id="mDesc" class="field-input" type="text" placeholder="Ej: Compra semanal, Cena cumpleaños..." maxlength="80" />
+      </div>
+
+      <!-- Fecha -->
+      <div style="margin-bottom:16px">
+        <div class="field-label">Fecha *</div>
+        <input id="mFecha" class="field-input" type="date" required />
+      </div>
+
+      <!-- Notas -->
+      <div style="margin-bottom:16px">
+        <div class="field-label">Notas</div>
+        <textarea id="mNotas" class="field-input" rows="2" placeholder="Notas adicionales..." maxlength="200"></textarea>
+      </div>
+
+      <!-- Recurrente -->
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:22px;cursor:pointer;font-size:13px">
+        <input type="checkbox" id="mRec" style="accent-color:var(--primary);width:auto" />
+        Gasto recurrente mensual 🔄
+      </label>
+
+      <div style="display:flex;gap:10px">
+        <button type="button" class="btn-secondary" onclick="closeModal()">Cancelar</button>
+        <button type="submit" class="btn-primary">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+// CONSTANTS & STATE
+// ══════════════════════════════════════════
+const MONTHS_ES    = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const MONTHS_SHORT = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+// Common supermarkets (for stats color coding)
+const SUPER_COLORS = {
+  'Mercadona': '#34d399', 'Carrefour': '#60a5fa', 'Lidl': '#facc15',
+  'Aldi':      '#f87171', 'Dia':       '#fb923c', 'Eroski': '#c084fc',
+  'Alcampo':   '#38bdf8', 'El Corte Inglés': '#a78bfa',
+  'Ahorramas': '#4ade80', 'Consum': '#f472b6', 'BM': '#94a3b8', 'Amazon Fresh': '#fb923c',
+};
+
+function superColor(name) {
+  return SUPER_COLORS[name] || ('#' + ((name.charCodeAt(0)*13+name.charCodeAt(name.length-1)*7)%16777215).toString(16).padStart(6,'0'));
+}
+
+let expenses = JSON.parse(localStorage.getItem('mg3_expenses') || '[]');
+let budget   = JSON.parse(localStorage.getItem('mg3_budget')   || '{}');
+let modeType = ''; // restaurante | supermercado
+let modePay  = ''; // tarjeta | efectivo
+let editId   = null;
+let currentTab = 'dashboard';
+
+const now = new Date();
+let selY = now.getFullYear();
+let selM = now.getMonth();
+
+// ══════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════
+const fmt = (n, c='€') => n.toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+c;
+const fmtD = s => { const d = new Date(s+'T00:00:00'); return d.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}); };
+const uid  = () => Date.now().toString(36)+Math.random().toString(36).slice(2);
+const mData= (y,m) => expenses.filter(e=>e.fecha.startsWith(`${y}-${String(m+1).padStart(2,'0')}`));
+const sum  = arr => arr.reduce((s,e)=>s+e.importe,0);
+
+function toast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ══════════════════════════════════════════
+// MONTH NAV
+// ══════════════════════════════════════════
+function updateMonthDisplay() {
+  document.getElementById('monthDisplay').textContent = `${MONTHS_ES[selM].slice(0,3)} ${selY}`;
+}
+function changeMonth(d) {
+  selM+=d;
+  if(selM>11){selM=0;selY++;}
+  if(selM<0) {selM=11;selY--;}
+  const nm=new Date(selY,selM,1), today=new Date(now.getFullYear(),now.getMonth(),1);
+  if(nm>today){selM-=d;if(selM>11)selM=0;if(selM<0)selM=11;return;}
+  updateMonthDisplay(); renderTab();
+}
+
+// ══════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════
+function goTab(tab) {
+  currentTab=tab;
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active',el.dataset.tab===tab));
+  renderTab();
+}
+function renderTab() {
+  if(currentTab==='dashboard')    renderDashboard();
+  if(currentTab==='gastos')       renderGastos();
+  if(currentTab==='super')        renderSuper();
+  if(currentTab==='stats')        renderStats();
+  if(currentTab==='presupuesto')  renderBudget();
+}
+
+// ══════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════
+function renderDashboard() {
+  const data  = mData(selY,selM);
+  const total = sum(data);
+  const rest  = sum(data.filter(e=>e.tipoGasto==='restaurante'));
+  const super_= sum(data.filter(e=>e.tipoGasto==='supermercado'));
+  const card  = sum(data.filter(e=>e.pago==='tarjeta'));
+  const cash  = sum(data.filter(e=>e.pago==='efectivo'));
+  const count = data.length;
+
+  document.getElementById('dashSub').textContent   = `${MONTHS_ES[selM]} ${selY}`;
+  document.getElementById('sMonthLbl').textContent  = `${MONTHS_ES[selM]} ${selY}`;
+  document.getElementById('sTotal').textContent     = fmt(total);
+  document.getElementById('sRest').textContent      = fmt(rest);
+  document.getElementById('sRestPct').textContent   = total ? `${Math.round(rest/total*100)}% del total` : '0%';
+  document.getElementById('sSuper').textContent     = fmt(super_);
+  document.getElementById('sSuperPct').textContent  = total ? `${Math.round(super_/total*100)}% del total` : '0%';
+  document.getElementById('sCount').textContent     = count;
+  document.getElementById('sAvg').textContent       = count ? `media: ${fmt(total/count)}` : 'sin gastos';
+
+  renderDonut('cDonut','donutLegend',
+    [{v:rest,  c:'#fb923c',l:'Restaurantes'},
+     {v:super_,c:'#34d399',l:'Supermercados'}], total);
+  renderDonut('cDonut2','donutLegend2',
+    [{v:card,c:'#60a5fa',l:'Tarjeta'},
+     {v:cash,c:'#34d399',l:'Efectivo'}], total);
+  renderLineChart();
+  renderRecent(data);
+}
+
+// ══════════════════════════════════════════
+// GASTOS
+// ══════════════════════════════════════════
+function renderGastos() {
+  let data = mData(selY,selM);
+  const search = (document.getElementById('fSearch')?.value||'').toLowerCase();
+  const type   = document.getElementById('fType')?.value||'';
+  const pay    = document.getElementById('fPay')?.value||'';
+  const order  = document.getElementById('fOrder')?.value||'fecha-desc';
+
+  if(search) data=data.filter(e=>(e.lugar||'').toLowerCase().includes(search)||(e.desc||'').toLowerCase().includes(search)||(e.notas||'').toLowerCase().includes(search));
+  if(type)   data=data.filter(e=>e.tipoGasto===type);
+  if(pay)    data=data.filter(e=>e.pago===pay);
+  data.sort((a,b)=>order==='fecha-desc'?b.fecha.localeCompare(a.fecha):order==='fecha-asc'?a.fecha.localeCompare(b.fecha):order==='importe-desc'?b.importe-a.importe:a.importe-b.importe);
+
+  const rows=document.getElementById('gastoRows');
+  if(!data.length){
+    rows.innerHTML=`<div class="empty"><div class="empty-icon">🍽️</div><div class="empty-text">Sin gastos registrados</div><div class="empty-sub">Pulsa "+ Nuevo" para añadir tu primer gasto</div></div>`;
+    document.getElementById('gastoCount').textContent=''; return;
+  }
+  rows.innerHTML=data.map(e=>{
+    const isRest=e.tipoGasto==='restaurante';
+    const payClass=e.pago==='tarjeta'?'pay-tarjeta':'pay-efectivo';
+    const payIcon =e.pago==='tarjeta'?'💳':'💵';
+    return `<div class="expense-row" onclick="openModal('${e.id}')">
+      <div style="color:var(--muted);font-size:12px">${fmtD(e.fecha)}</div>
+      <div>
+        <div style="font-weight:600;font-size:13px">${e.lugar||'—'}${e.recurrente?' 🔄':''}</div>
+        ${e.desc?`<div style="font-size:11px;color:var(--muted)">${e.desc}</div>`:''}
+      </div>
+      <div><span class="pill ${isRest?'cat-rest':'cat-super'}">${isRest?'🍽️ Restaurante':'🛒 Supermercado'}</span></div>
+      <div><span class="pill ${payClass}">${payIcon} ${e.pago}</span></div>
+      <div style="text-align:right;font-weight:600;font-size:13px">${fmt(e.importe,e.moneda||'€')}</div>
+      <div><button class="del-btn" onclick="event.stopPropagation();delExpense('${e.id}')">🗑</button></div>
+    </div>`;
+  }).join('');
+  const total=sum(data);
+  document.getElementById('gastoCount').textContent=`${data.length} transacción${data.length!==1?'es':''} · Total: ${fmt(total)}`;
+}
+
+// ══════════════════════════════════════════
+// SUPERMERCADOS TAB
+// ══════════════════════════════════════════
+function renderSuper() {
+  const data   = mData(selY,selM).filter(e=>e.tipoGasto==='supermercado');
+  const byName = {};
+  data.forEach(e=>{ byName[e.lugar]=(byName[e.lugar]||0)+e.importe; });
+  const sorted = Object.entries(byName).sort((a,b)=>b[1]-a[1]);
+  const maxV   = sorted[0]?.[1]||1;
+  const totalS = sum(data);
+
+  // Ranking
+  const rankEl = document.getElementById('superRanking');
+  if(!sorted.length) {
+    rankEl.innerHTML='<div class="empty" style="padding:28px"><div class="empty-sub">Sin compras en supermercado este mes</div></div>';
+  } else {
+    rankEl.innerHTML = sorted.map(([name,v],i)=>{
+      const col = superColor(name);
+      const visits = data.filter(e=>e.lugar===name).length;
+      const pct = totalS ? Math.round(v/totalS*100) : 0;
+      return `<div class="super-rank-row">
+        <div style="width:26px;height:26px;border-radius:50%;background:${col};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#0f1117;flex-shrink:0">${i+1}</div>
+        <div style="flex:1">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span style="font-size:14px;font-weight:600">${name}</span>
+            <span style="font-size:14px;font-weight:700;color:${col}">${fmt(v)}</span>
+          </div>
+          <div class="prog-wrap"><div class="prog-fill" style="width:${Math.round(v/maxV*100)}%;background:${col}"></div></div>
+          <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:11px;color:var(--muted)">
+            <span>${visits} visita${visits!==1?'s':''}</span>
+            <span>${pct}% del gasto en supers</span>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Bar chart
+  const barEl   = document.getElementById('cSuperBar');
+  const emptyEl = document.getElementById('cSuperEmpty');
+  if(!sorted.length){ barEl.style.display='none'; emptyEl.style.display=''; }
+  else { barEl.style.display=''; emptyEl.style.display='none'; setTimeout(()=>drawBarChart('cSuperBar',sorted.map(([n])=>n),sorted.map(([,v])=>v),sorted.map(([n])=>superColor(n)),180,true),10); }
+
+  // Histórico line chart por super
+  const allSupers = [...new Set(expenses.filter(e=>e.tipoGasto==='supermercado').map(e=>e.lugar))];
+  const labels=[];
+  for(let i=5;i>=0;i--){ let m=selM-i,y=selY; while(m<0){m+=12;y--;} labels.push(MONTHS_SHORT[m]); }
+
+  const datasets = allSupers.map(name=>{
+    const values=[];
+    for(let i=5;i>=0;i--){ let m=selM-i,y=selY; while(m<0){m+=12;y--;} values.push(sum(mData(y,m).filter(e=>e.tipoGasto==='supermercado'&&e.lugar===name))); }
+    return {label:name, values, color:superColor(name)};
+  });
+
+  setTimeout(()=>drawMultiLine('cSuperLine',labels,datasets),10);
+  const legend=document.getElementById('superLineLegend');
+  legend.innerHTML=allSupers.map(n=>`<div class="legend-item"><div class="legend-dot" style="background:${superColor(n)}"></div><span>${n}</span></div>`).join('');
+}
+
+// ══════════════════════════════════════════
+// STATS
+// ══════════════════════════════════════════
+function renderStats() {
+  const data  = mData(selY,selM);
+  const total = sum(data);
+  const count = data.length;
+
+  if(count){
+    const byDay={};
+    data.forEach(e=>{byDay[e.fecha]=(byDay[e.fecha]||0)+e.importe;});
+    const peak=Object.entries(byDay).sort((a,b)=>b[1]-a[1])[0];
+    document.getElementById('xPeak').textContent = peak?fmtD(peak[0]):'—';
+    document.getElementById('xMax').textContent  = fmt(Math.max(...data.map(e=>e.importe)));
+    document.getElementById('xMin').textContent  = fmt(Math.min(...data.map(e=>e.importe)));
+    document.getElementById('xAvg').textContent  = fmt(total/new Date(selY,selM+1,0).getDate());
+    document.getElementById('xRestCount').textContent  = data.filter(e=>e.tipoGasto==='restaurante').length;
+    document.getElementById('xSuperCount').textContent = data.filter(e=>e.tipoGasto==='supermercado').length;
+  } else {
+    ['xPeak','xMax','xMin','xAvg','xRestCount','xSuperCount'].forEach(id=>document.getElementById(id).textContent='—');
+  }
+
+  // Compare total
+  const labels=[], totals=[], rests=[], supers=[];
+  for(let i=5;i>=0;i--){ let m=selM-i,y=selY; while(m<0){m+=12;y--;} labels.push(MONTHS_SHORT[m]); const d=mData(y,m); totals.push(sum(d)); rests.push(sum(d.filter(e=>e.tipoGasto==='restaurante'))); supers.push(sum(d.filter(e=>e.tipoGasto==='supermercado'))); }
+  setTimeout(()=>drawBarChart('cCompare',labels,totals,totals.map((_,i)=>i===5?'#7c6af7':'#7c6af740'),140,false),10);
+  setTimeout(()=>drawMultiLine('cRestLine', labels,[{label:'Restaurantes',values:rests, color:'#fb923c'}]),10);
+  setTimeout(()=>drawMultiLine('cSuperLine2',labels,[{label:'Supermercados',values:supers,color:'#34d399'}]),10);
+}
+
+// ══════════════════════════════════════════
+// BUDGET
+// ══════════════════════════════════════════
+function renderBudget() {
+  ['restaurante','supermercado'].forEach(k=>{
+    const el=document.getElementById('b_'+k);
+    if(el) el.value=budget[k]||'';
+  });
+
+  const data   = mData(selY,selM);
+  const rest   = sum(data.filter(e=>e.tipoGasto==='restaurante'));
+  const super_ = sum(data.filter(e=>e.tipoGasto==='supermercado'));
+  const bars   = document.getElementById('budgetBars');
+  const hasBudget = budget.restaurante || budget.supermercado;
+  if(!hasBudget){ bars.innerHTML='<div class="empty" style="padding:28px"><div class="empty-sub">Define límites arriba y guárdalos</div></div>'; return; }
+
+  const entries=[['restaurante','🍽️ Restaurantes',rest,'#fb923c'],['supermercado','🛒 Supermercados',super_,'#34d399']];
+  bars.innerHTML = entries.filter(([k])=>budget[k]).map(([k,label,spent,baseCol])=>{
+    const limit=parseFloat(budget[k]);
+    const pct=limit?Math.min(spent/limit*100,100):0;
+    const over=spent>limit;
+    const col=over?'#f87171':pct>80?'#fb923c':baseCol;
+    return `<div style="margin-bottom:22px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:14px;font-weight:600">${label}</span>
+        <span style="font-size:13px"><span style="font-weight:700;color:${col}">${fmt(spent)}</span><span style="color:var(--muted)"> / ${fmt(limit)}</span>${over?`<span class="pill" style="background:#f8717130;color:#f87171;margin-left:8px">⚠️ Excedido</span>`:''}</span>
+      </div>
+      <div class="prog-wrap"><div class="prog-fill" style="width:${pct}%;background:${col}"></div></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:5px">${over?`Excedido en ${fmt(spent-limit)}`:`Disponible: ${fmt(limit-spent)}`}</div>
+    </div>`;
+  }).join('');
+}
+function saveBudget() {
+  ['restaurante','supermercado'].forEach(k=>{ const el=document.getElementById('b_'+k); if(el&&el.value) budget[k]=parseFloat(el.value); else delete budget[k]; });
+  localStorage.setItem('mg3_budget',JSON.stringify(budget));
+  renderBudget(); toast('💾 Presupuesto guardado');
+}
+
+// ══════════════════════════════════════════
+// RECENT
+// ══════════════════════════════════════════
+function renderRecent(data) {
+  const el=document.getElementById('recentRows');
+  const list=[...data].sort((a,b)=>b.fecha.localeCompare(a.fecha)).slice(0,6);
+  if(!list.length){ el.innerHTML=`<div class="empty"><div class="empty-icon">🍽️</div><div class="empty-text">Sin gastos este mes</div><div class="empty-sub">Pulsa "+ Nuevo Gasto" para empezar</div></div>`; return; }
+  el.innerHTML=list.map(e=>{
+    const isRest=e.tipoGasto==='restaurante';
+    return `<div class="expense-row" onclick="openModal('${e.id}')">
+      <div style="color:var(--muted);font-size:12px">${fmtD(e.fecha)}</div>
+      <div><div style="font-weight:600;font-size:13px">${e.lugar||'—'}${e.recurrente?' 🔄':''}</div>${e.desc?`<div style="font-size:11px;color:var(--muted)">${e.desc}</div>`:''}</div>
+      <div><span class="pill ${isRest?'cat-rest':'cat-super'}">${isRest?'🍽️ Restaurante':'🛒 Supermercado'}</span></div>
+      <div><span class="pill ${e.pago==='tarjeta'?'pay-tarjeta':'pay-efectivo'}">${e.pago==='tarjeta'?'💳':'💵'} ${e.pago}</span></div>
+      <div style="text-align:right;font-weight:600;font-size:13px">${fmt(e.importe,e.moneda||'€')}</div>
+      <div></div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+// MODAL
+// ══════════════════════════════════════════
+function openModal(id=null) {
+  editId=id; modeType=''; modePay='';
+  setType(''); setPay('');
+  if(id){
+    const e=expenses.find(x=>x.id===id);
+    if(e){
+      document.getElementById('modalTitle').textContent='Editar Gasto';
+      document.getElementById('mImporte').value=e.importe;
+      document.getElementById('mMoneda').value=e.moneda||'€';
+      document.getElementById('mLugar').value=e.lugar||'';
+      document.getElementById('mDesc').value=e.desc||'';
+      document.getElementById('mFecha').value=e.fecha;
+      document.getElementById('mNotas').value=e.notas||'';
+      document.getElementById('mRec').checked=!!e.recurrente;
+      setType(e.tipoGasto); setPay(e.pago);
+    }
+  } else {
+    document.getElementById('modalTitle').textContent='Nuevo Gasto';
+    document.querySelector('.modal-box form').reset();
+    document.getElementById('mFecha').value=new Date().toISOString().split('T')[0];
+    setType(''); setPay('');
+  }
+  document.getElementById('modalBg').style.display='flex';
+}
+function closeModal(){ document.getElementById('modalBg').style.display='none'; editId=null; }
+
+function setType(type) {
+  modeType=type;
+  document.getElementById('mTipoGasto').value=type;
+  document.getElementById('typRest').className ='type-btn'+(type==='restaurante'?' sel':'');
+  document.getElementById('typSuper').className='type-btn'+(type==='supermercado'?' sel':'');
+  document.getElementById('superChips').style.display=type==='supermercado'?'flex':'none';
+  document.getElementById('lugarLabel').textContent=type==='supermercado'?'Supermercado *':type==='restaurante'?'Restaurante *':'Lugar *';
+  document.getElementById('mLugar').placeholder=type==='supermercado'?'Ej: Mercadona, Lidl...':type==='restaurante'?'Ej: Restaurante El Rincón...':'Ej: Mercadona, Restaurante...';
+}
+function setPay(type) {
+  modePay=type;
+  document.getElementById('mPago').value=type;
+  document.getElementById('payT').className='pay-btn'+(type==='tarjeta'?' sel':'');
+  document.getElementById('payE').className='pay-btn'+(type==='efectivo'?' sel':'');
+}
+function setLugar(name) { document.getElementById('mLugar').value=name; }
+
+function saveExpense(ev) {
+  ev.preventDefault();
+  if(!modeType) { toast('⚠️ Selecciona el tipo de gasto'); return; }
+  if(!modePay)  { toast('⚠️ Selecciona la forma de pago'); return; }
+  const lugar=document.getElementById('mLugar').value.trim();
+  if(!lugar)    { toast('⚠️ Indica el lugar'); return; }
+
+  const e={
+    id: editId||uid(),
+    importe:   parseFloat(document.getElementById('mImporte').value),
+    moneda:    document.getElementById('mMoneda').value,
+    tipoGasto: modeType,
+    pago:      modePay,
+    lugar,
+    desc:      document.getElementById('mDesc').value,
+    fecha:     document.getElementById('mFecha').value,
+    notas:     document.getElementById('mNotas').value,
+    recurrente:document.getElementById('mRec').checked,
+    ts:        Date.now(),
+  };
+  if(editId){ const idx=expenses.findIndex(x=>x.id===editId); if(idx!==-1) expenses[idx]={...expenses[idx],...e}; toast('✅ Gasto actualizado'); }
+  else       { expenses.push(e); toast('✅ Gasto añadido'); }
+  localStorage.setItem('mg3_expenses',JSON.stringify(expenses));
+  closeModal(); renderTab();
+}
+function delExpense(id) {
+  if(!confirm('¿Eliminar este gasto?')) return;
+  expenses=expenses.filter(e=>e.id!==id);
+  localStorage.setItem('mg3_expenses',JSON.stringify(expenses));
+  renderTab(); toast('🗑️ Gasto eliminado');
+}
+
+// ══════════════════════════════════════════
+// CHARTS
+// ══════════════════════════════════════════
+function setupCanvas(id, h) {
+  const c=document.getElementById(id); if(!c) return null;
+  const dpr=window.devicePixelRatio||1;
+  const W=c.getBoundingClientRect().width||600;
+  c.width=W*dpr; c.height=h*dpr;
+  c.style.width=W+'px'; c.style.height=h+'px';
+  const ctx=c.getContext('2d'); ctx.scale(dpr,dpr);
+  return {ctx,W,H:h};
+}
+
+function renderDonut(cid, lid, segs, total) {
+  const r=setupCanvas(cid,160); if(!r) return;
+  const {ctx}=r;
+  ctx.clearRect(0,0,160,160);
+  const tot=segs.reduce((s,x)=>s+x.v,0);
+  const legend=document.getElementById(lid);
+  if(!tot){ legend.innerHTML=`<div style="color:var(--muted);font-size:12px">Sin datos</div>`; return; }
+  let ang=-Math.PI/2;
+  segs.forEach(s=>{ const sl=(s.v/tot)*Math.PI*2; ctx.beginPath();ctx.moveTo(80,80);ctx.arc(80,80,68,ang,ang+sl);ctx.closePath();ctx.fillStyle=s.c;ctx.fill();ang+=sl; });
+  ctx.beginPath();ctx.arc(80,80,44,0,Math.PI*2);ctx.fillStyle='#1a1d27';ctx.fill();
+  ctx.fillStyle='#e8eaf6';ctx.font='bold 13px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(fmt(tot),80,74);
+  ctx.fillStyle='#7b82a8';ctx.font='11px sans-serif';ctx.fillText('total',80,91);
+  legend.innerHTML=segs.map(s=>`<div class="legend-item"><div class="legend-dot" style="background:${s.c}"></div><div>${s.l}: <strong>${fmt(s.v)}</strong></div></div>`).join('');
+}
+
+function drawBarChart(id,labels,values,colors,height=180,showLabel=true) {
+  const r=setupCanvas(id,height); if(!r) return;
+  const {ctx,W,H}=r;
+  ctx.clearRect(0,0,W,H);
+  if(!values.length) return;
+  const max=Math.max(...values,0.01);
+  const pad={t:14,r:10,b:showLabel?48:32,l:62};
+  const cW=W-pad.l-pad.r, cH=H-pad.t-pad.b;
+  const step=cW/values.length;
+  const bW=Math.max(12,step*0.55);
+
+  for(let i=0;i<=3;i++){
+    const y=pad.t+cH*(1-i/3);
+    ctx.strokeStyle='#2e334d';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+    ctx.fillStyle='#7b82a8';ctx.font='11px sans-serif';ctx.textAlign='right';
+    ctx.fillText(fmt(max*i/3),pad.l-4,y+4);
+  }
+  values.forEach((v,i)=>{
+    const x=pad.l+step*i+(step-bW)/2;
+    const bH=(v/max)*cH, y=pad.t+cH-bH;
+    ctx.fillStyle=Array.isArray(colors)?colors[i%colors.length]:colors;
+    ctx.beginPath();const rr=4;
+    ctx.moveTo(x+rr,y);ctx.lineTo(x+bW-rr,y);ctx.quadraticCurveTo(x+bW,y,x+bW,y+rr);
+    ctx.lineTo(x+bW,y+bH);ctx.lineTo(x,y+bH);ctx.lineTo(x,y+rr);ctx.quadraticCurveTo(x,y,x+rr,y);
+    ctx.closePath();ctx.fill();
+    if(showLabel){
+      ctx.fillStyle='#7b82a8';ctx.font='11px sans-serif';ctx.textAlign='center';
+      const lbl=labels[i].length>10?labels[i].slice(0,9)+'…':labels[i];
+      ctx.fillText(lbl,x+bW/2,H-pad.b+16);
+    } else {
+      ctx.fillStyle='#7b82a8';ctx.font='11px sans-serif';ctx.textAlign='center';
+      ctx.fillText(labels[i],x+bW/2,H-4);
+    }
+  });
+}
+
+function renderLineChart() {
+  const r=setupCanvas('cLine',110); if(!r) return;
+  const {ctx,W,H}=r; ctx.clearRect(0,0,W,H);
+  const labels=[],totals=[],rests=[],supers=[];
+  for(let i=5;i>=0;i--){ let m=selM-i,y=selY; while(m<0){m+=12;y--;} labels.push(MONTHS_SHORT[m]); const d=mData(y,m); totals.push(sum(d)); rests.push(sum(d.filter(e=>e.tipoGasto==='restaurante'))); supers.push(sum(d.filter(e=>e.tipoGasto==='supermercado'))); }
+  drawMultiLine('cLine',labels,[{label:'Total',values:totals,color:'#7c6af7'},{label:'Restaurantes',values:rests,color:'#fb923c'},{label:'Supermercados',values:supers,color:'#34d399'}]);
+}
+
+function drawMultiLine(id,labels,datasets) {
+  const c=document.getElementById(id); if(!c) return;
+  const dpr=window.devicePixelRatio||1;
+  const W=c.getBoundingClientRect().width||600;
+  const H=parseInt(c.style.height)||110;
+  c.width=W*dpr; c.height=H*dpr;
+  c.style.width=W+'px';
+  const ctx=c.getContext('2d'); ctx.scale(dpr,dpr);
+  ctx.clearRect(0,0,W,H);
+
+  const allVals=datasets.flatMap(d=>d.values);
+  const max=Math.max(...allVals,0.01);
+  const pad={t:14,r:14,b:26,l:62};
+  const cW=W-pad.l-pad.r, cH=H-pad.t-pad.b;
+
+  ctx.strokeStyle='#2e334d';ctx.lineWidth=1;
+  for(let i=0;i<=2;i++){
+    const y=pad.t+cH*(1-i/2);
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+    ctx.fillStyle='#7b82a8';ctx.font='11px sans-serif';ctx.textAlign='right';
+    ctx.fillText(fmt(max*i/2),pad.l-4,y+4);
+  }
+  labels.forEach((l,i)=>{ const x=pad.l+(i/(labels.length-1||1))*cW; ctx.fillStyle='#7b82a8';ctx.font='11px sans-serif';ctx.textAlign='center';ctx.fillText(l,x,H-4); });
+
+  datasets.forEach(ds=>{
+    if(!ds.values.some(v=>v>0)) return;
+    ctx.beginPath();ctx.strokeStyle=ds.color;ctx.lineWidth=2.5;
+    ds.values.forEach((v,i)=>{ const x=pad.l+(i/(labels.length-1||1))*cW,y=pad.t+cH-(v/max)*cH; i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); }); ctx.stroke();
+    ctx.save();
+    ctx.beginPath();
+    ds.values.forEach((v,i)=>{ const x=pad.l+(i/(labels.length-1||1))*cW,y=pad.t+cH-(v/max)*cH; i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+    ctx.lineTo(pad.l+cW,pad.t+cH);ctx.lineTo(pad.l,pad.t+cH);ctx.closePath();
+    const g=ctx.createLinearGradient(0,pad.t,0,pad.t+cH);
+    g.addColorStop(0,ds.color+'30');g.addColorStop(1,ds.color+'00');
+    ctx.fillStyle=g;ctx.fill();ctx.restore();
+    ds.values.forEach((v,i)=>{ const x=pad.l+(i/(labels.length-1||1))*cW,y=pad.t+cH-(v/max)*cH; ctx.beginPath();ctx.arc(x,y,3.5,0,Math.PI*2);ctx.fillStyle=ds.color;ctx.fill(); });
+  });
+}
+
+// Resize
+let rt;
+window.addEventListener('resize',()=>{ clearTimeout(rt); rt=setTimeout(()=>renderTab(),200); });
+
+// INIT
+updateMonthDisplay();
+renderDashboard();
+</script>
+</body>
+</html>
+
